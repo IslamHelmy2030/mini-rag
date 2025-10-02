@@ -1,2 +1,2 @@
 # mini-rag
-RAG
+This is a minimal implementation of RAG model for question answering
