@@ -18,7 +18,7 @@ class DataController(BaseController):
             return False, ResponseSignal.FILE_TYPE_NOT_ALLOWED.value
 
         file_size = getattr(file, "size", None)
-        if file.size > self.app_settings.FILE_MAX_SIZE * self.size_scale:
+        if file_size is not None and file_size > self.app_settings.FILE_MAX_SIZE * self.size_scale:
             return False, ResponseSignal.FILE_SIZE_EXCEEDED.value
 
         return True, ResponseSignal.FILE_VALIDATED_SUCCESSFULLY.value
