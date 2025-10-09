@@ -11,7 +11,7 @@ from models.ChunkModel import ChunkModel
 from models.db_schemes import DataChunk
 
 
-logger = logging.getLogger("uvicorn.error")
+#logger = logging.getLogger("uvicorn.error")
 data_router = APIRouter(prefix="/api/v1/data", tags=["api_v1", "data"])
 
 
@@ -22,7 +22,7 @@ async def upload_data(
     file: UploadFile,
     app_settings: Settings = Depends(get_settings),
 ):
-    project_model = ProjectModel(db_client=request.app.mongodb)
+    project_model = await ProjectModel.create_instance(db_client=request.app.mongodb)
 
     project = await project_model.get_project_or_create_one(project_id)
 
@@ -43,7 +43,7 @@ async def upload_data(
             while chunk := await file.read(chunk_size):
                 await out_file.write(chunk)
     except Exception as e:
-        logger.exception("Error uploading file: %s", e)
+        #logger.exception("Error uploading file: %s", e)
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
@@ -67,7 +67,7 @@ async def process_endpoint(request:Request, project_id: str, process_request: Pr
     chunk_size = process_request.chunk_size
     overlap_size = process_request.overlap_size
 
-    project_model = ProjectModel(db_client=request.app.mongodb)
+    project_model = await ProjectModel.create_instance(db_client=request.app.mongodb)
     project = await project_model.get_project_or_create_one(project_id)
 
     process_controller = ProcessController(project_id)
@@ -93,7 +93,7 @@ async def process_endpoint(request:Request, project_id: str, process_request: Pr
         for i, chunk in enumerate(file_chunks)
     ]
 
-    chunk_model = ChunkModel(db_client=request.app.mongodb)
+    chunk_model = await ChunkModel.create_instance(db_client=request.app.mongodb)
 
     if process_request.do_reset == 1:
         await chunk_model.delete_chunks_by_project_id(project.id)
