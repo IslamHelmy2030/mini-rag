@@ -31,4 +31,7 @@ app.include_router(data.data_router)
 if __name__ == "__main__":
     import uvicorn
 
+    # Note: For auto-reload or multiple workers, run via CLI with an import string, e.g.:
+    #   uvicorn main:app --app-dir src --reload
+    # Programmatic run below intentionally avoids reload to prevent import-string requirement errors.
     uvicorn.run(app, host="127.0.0.1", port=8000)
