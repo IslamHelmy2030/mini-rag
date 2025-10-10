@@ -11,7 +11,7 @@ class ProjectModel(BaseDataModel):
 
     @classmethod
     async def create_instance(cls, db_client: object):
-        instance = cls(db_client=db_client)
+        instance = cls(db_client)
         await instance.init_collection()
         return instance
 
