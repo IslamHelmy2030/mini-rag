@@ -16,23 +16,34 @@ class QdrantDBProvider(VectorDBInterface):
             self.distance_method = models.Distance.COSINE
         elif distance_method == DistanceMethodEnums.DOT.value:
             self.distance_method = models.Distance.DOT
+        elif distance_method == DistanceMethodEnums.EUCLIDEAN.value:
+            self.distance_method = models.Distance.EUCLID
 
         self.logger = logging.getLogger(__name__)
 
     def connect(self):
-        self.client = QdrantClient(self.db_path)
+        # Initialize Qdrant client. Use local embedded mode if a filesystem path is provided,
+        # otherwise treat it as a URL.
+        if isinstance(self.db_path, str) and (self.db_path.startswith("http://") or self.db_path.startswith("https://")):
+            self.client = QdrantClient(url=self.db_path)
+        else:
+            self.client = QdrantClient(path=self.db_path)
 
     def disconnect(self):
         self.client = None
 
     def is_collection_exists(self, collection_name: str) -> bool:
-        return  self.client.collections.exists(collection_name)
+        try:
+            _ = self.client.get_collection(collection_name)
+            return True
+        except Exception:
+            return False
 
     def list_all_collections(self) -> List:
         return self.client.get_collections()
 
     def get_collection_info(self, collection_name: str) -> dict:
-        return  self.client.get_collections(collection_name)
+        return self.client.get_collection(collection_name)
 
     def delete_collection(self, collection_name: str):
         if self.is_collection_exists(collection_name):
@@ -61,6 +72,7 @@ class QdrantDBProvider(VectorDBInterface):
                 collection_name=collection_name,
                 records=[
                     models.Record(
+                        id=record_id,
                         vector=vector,
                         payload={
                             "text": text,"metadata":metadata
@@ -80,16 +92,18 @@ class QdrantDBProvider(VectorDBInterface):
             metadata = [None] * len(texts)
 
         if record_ids is None:
-            record_ids = [None] * len(texts)
+            record_ids = list(range(0, len(texts)))
 
         for i in range(0, len(texts), batch_size):
             batch_end = i + batch_size
             batch_texts = texts[i:batch_end]
             batch_vectors = vectors[i:batch_end]
             batch_metadata = metadata[i:batch_end]
+            batch_record_ids = record_ids[i:batch_end]
 
             batch_records = [
                 models.Record(
+                    id= batch_record_ids[x],
                     vector=batch_vectors[x],
                     payload={
                         "text": batch_texts[x], "metadata": batch_metadata[x]
