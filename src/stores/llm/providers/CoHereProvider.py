@@ -5,11 +5,16 @@ import logging
 
 class CoHereProvider(LLMInterface):
 
-    def __init__(self, api_key: str,
+    def __init__(self, embedding_api_key: str= None, embedding_api_url: str = None,
+                 generation_api_key: str = None, generation_api_url: str = None,
                  default_input_max_tokens: int = 1000,
                  default_generation_max_output_tokens: int = 1000,
                  default_generation_temperature: float = 0.1):
-        self.api_key = api_key
+
+        self.embedding_api_key = embedding_api_key
+        self.embedding_api_url = embedding_api_url
+        self.generation_api_key = generation_api_key
+        self.generation_api_url = generation_api_url
 
         self.default_input_max_tokens = default_input_max_tokens
         self.default_generation_max_output_tokens = default_generation_max_output_tokens
@@ -19,7 +24,11 @@ class CoHereProvider(LLMInterface):
         self.embedding_model_id = None
         self.embedding_size = None
 
-        self.client = cohere.Client(api_key=self.api_key)
+        if embedding_api_key:
+            self.embedding_client = cohere.Client(api_key=self.embedding_api_key)
+
+        if generation_api_key:
+            self.generation_client = cohere.Client(api_key=self.generation_api_key)
 
         self.enums = CoHereEnums
 
@@ -37,8 +46,8 @@ class CoHereProvider(LLMInterface):
 
     def generate_text(self, prompt: str, chat_history: list = [],
                       max_output_tokens: int = None, temperature: float = None):
-        if not self.client:
-            self.logger.error("CoHere client is not initialized")
+        if not self.generation_client:
+            self.logger.error("CoHere Generation client is not initialized")
             return None
 
         if not self.generation_model_id:
@@ -48,7 +57,7 @@ class CoHereProvider(LLMInterface):
         max_output_tokens = max_output_tokens if max_output_tokens is not None else self.default_generation_max_output_tokens
         temperature = temperature if temperature is not None else self.default_generation_temperature
 
-        response = self.client.chat(
+        response = self.generation_client.chat(
             model=self.generation_model_id,
             chat_history=chat_history,
             message= self.process_text(prompt),
@@ -63,8 +72,8 @@ class CoHereProvider(LLMInterface):
         return response.text
 
     def embed_text(self, text:str, document_type:str = None):
-        if not self.client:
-            self.logger.error("CoHere client is not initialized")
+        if not self.embedding_client:
+            self.logger.error("CoHere Embedding client is not initialized")
             return None
 
         if not self.embedding_model_id:
@@ -75,7 +84,7 @@ class CoHereProvider(LLMInterface):
         if document_type == DocumentTypeEnums.QUERY:
             input_type = CoHereEnums.QUERY
 
-        response = self.client.embed(
+        response = self.embedding_client.embed(
             model= self.embedding_model_id,
             texts= [self.process_text(text)],
             input_type=input_type,

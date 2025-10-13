@@ -82,9 +82,11 @@ class NLPController(BaseController):
 
 
     def answer_rag_question(self, project: Project, query: str, limit: int = 10):
+
+        answer, full_prompt, chat_history = None, None, None
         retrieved_documents = self.search_vector_db_collection(project=project, text=query, limit=limit)
         if not retrieved_documents or len(retrieved_documents) == 0:
-            return None
+            return answer, full_prompt, chat_history
 
         system_prompt = self.template_parser.get("rag", "system_prompt")
 
@@ -96,7 +98,9 @@ class NLPController(BaseController):
             for idx, doc in enumerate(retrieved_documents)
         ])
 
-        footer_prompt = self.template_parser.get("rag", "footer_prompt")
+        footer_prompt = self.template_parser.get("rag", "footer_prompt",{
+            "query": query,
+        })
 
         chat_history = [
             self.generation_client.construct_prompt(

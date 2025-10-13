@@ -23,10 +23,17 @@ class Settings(BaseSettings):
     GENERATION_DEFAULT_MAX_TOKENS:int = None
     GENERATION_DEFAULT_TEMPERATURE: float = None
 
-    OPENAI_API_KEY:str = None
-    OPENAI_API_URL:str = None
+    EMBEDDING_API_KEY:str = None
+    EMBEDDING_API_URL:str = None
 
-    COHERE_API_KEY:str = None
+    GENERATION_API_KEY:str = None
+    GENERATION_API_URL:str = None
+
+
+    # OPENAI_API_KEY:str = None
+    # OPENAI_API_URL:str = None
+    #
+    # COHERE_API_KEY:str = None
 
     VECTOR_DB_BACKEND: str
     VECTOR_DB_PATH: str
