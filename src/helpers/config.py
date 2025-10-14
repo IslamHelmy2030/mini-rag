@@ -1,7 +1,7 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
+
 
 class Settings(BaseSettings):
-
     APP_NAME: str
     APP_VERSION: str
 
@@ -18,23 +18,22 @@ class Settings(BaseSettings):
     POSTGRES_PORT: int
     POSTGRES_MAIN_DATABASE: str
 
-    GENERATION_BACKEND:str
-    EMBEDDING_BACKEND:str
+    GENERATION_BACKEND: str
+    EMBEDDING_BACKEND: str
 
-    GENERATION_MODEL_ID:str = None
-    EMBEDDING_MODEL_ID:str = None
-    EMBEDDING_MODEL_SIZE:int = None
+    GENERATION_MODEL_ID: str = None
+    EMBEDDING_MODEL_ID: str = None
+    EMBEDDING_MODEL_SIZE: int = None
 
-    INPUT_DEFAULT_MAX_SIZE:int = None
-    GENERATION_DEFAULT_MAX_TOKENS:int = None
+    INPUT_DEFAULT_MAX_SIZE: int = None
+    GENERATION_DEFAULT_MAX_TOKENS: int = None
     GENERATION_DEFAULT_TEMPERATURE: float = None
 
-    EMBEDDING_API_KEY:str = None
-    EMBEDDING_API_URL:str = None
+    EMBEDDING_API_KEY: str = None
+    EMBEDDING_API_URL: str = None
 
-    GENERATION_API_KEY:str = None
-    GENERATION_API_URL:str = None
-
+    GENERATION_API_KEY: str = None
+    GENERATION_API_URL: str = None
 
     # OPENAI_API_KEY:str = None
     # OPENAI_API_URL:str = None
@@ -50,6 +49,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+
 
 def get_settings():
     return Settings()

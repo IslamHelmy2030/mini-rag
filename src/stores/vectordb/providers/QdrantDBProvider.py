@@ -1,14 +1,15 @@
-from ..VectorDBInterface import VectorDBInterface
-from ..VectorDBEnums import DistanceMethodEnums
-from qdrant_client import QdrantClient, models
-from typing import List
-from models.db_schemes import RetrievedDocument
 import logging
+from typing import List
 
+from models.db_schemes import RetrievedDocument
+from qdrant_client import QdrantClient, models
+
+from ..VectorDBEnums import DistanceMethodEnums
+from ..VectorDBInterface import VectorDBInterface
 
 
 class QdrantDBProvider(VectorDBInterface):
-    def __init__(self, db_path:str, distance_method:str):
+    def __init__(self, db_path: str, distance_method: str):
         self.client = None
         self.db_path = db_path
         self.distance_method = None
@@ -25,7 +26,8 @@ class QdrantDBProvider(VectorDBInterface):
     def connect(self):
         # Initialize Qdrant client. Use local embedded mode if a filesystem path is provided,
         # otherwise treat it as a URL.
-        if isinstance(self.db_path, str) and (self.db_path.startswith("http://") or self.db_path.startswith("https://")):
+        if isinstance(self.db_path, str) and (
+                self.db_path.startswith("http://") or self.db_path.startswith("https://")):
             self.client = QdrantClient(url=self.db_path)
         else:
             self.client = QdrantClient(path=self.db_path)
@@ -69,14 +71,14 @@ class QdrantDBProvider(VectorDBInterface):
             self.logger.error(f"Can not insert to non-existed collection: {collection_name}")
             return False
         try:
-            _= self.client.upload_records(
+            _ = self.client.upload_records(
                 collection_name=collection_name,
                 records=[
                     models.Record(
                         id=record_id,
                         vector=vector,
                         payload={
-                            "text": text,"metadata":metadata
+                            "text": text, "metadata": metadata
                         }
                     )
                 ]
@@ -104,7 +106,7 @@ class QdrantDBProvider(VectorDBInterface):
 
             batch_records = [
                 models.Record(
-                    id= batch_record_ids[x],
+                    id=batch_record_ids[x],
                     vector=batch_vectors[x],
                     payload={
                         "text": batch_texts[x], "metadata": batch_metadata[x]
@@ -147,6 +149,3 @@ class QdrantDBProvider(VectorDBInterface):
             })
             for result in results
         ]
-
-
-

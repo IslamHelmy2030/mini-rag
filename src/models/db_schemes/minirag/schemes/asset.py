@@ -1,8 +1,11 @@
-from .minirag_base import SQLAlchemyBase
+import uuid
+
 from sqlalchemy import Column, Integer, String, DateTime, func, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
-import uuid
+
+from .minirag_base import SQLAlchemyBase
+
 
 class Asset(SQLAlchemyBase):
     __tablename__ = "assets"
@@ -17,7 +20,7 @@ class Asset(SQLAlchemyBase):
 
     asset_project_id = Column(Integer, ForeignKey("projects.project_id"), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), server_default= func.now(), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
 
     project = relationship("Project", back_populates="assets")

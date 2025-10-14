@@ -1,10 +1,11 @@
-from pydantic import BaseModel
+import uuid
 
-from .minirag_base import SQLAlchemyBase
+from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, DateTime, func, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
-import uuid
+
+from .minirag_base import SQLAlchemyBase
 
 
 class DataChunk(SQLAlchemyBase):
@@ -26,7 +27,7 @@ class DataChunk(SQLAlchemyBase):
     project = relationship("Project", back_populates="chunks")
     asset = relationship("Asset", back_populates="chunks")
 
-    __table_args__= (
+    __table_args__ = (
         Index("ix_chunks_project_id", "chunk_project_id"),
         Index("ix_chunks_asset_id", "chunk_asset_id")
     )

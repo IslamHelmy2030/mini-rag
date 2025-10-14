@@ -1,15 +1,12 @@
-from tkinter.messagebox import RETRY
-
-from fastapi import APIRouter, status, Request
-from fastapi.responses import JSONResponse
-from routes.schemes.nlp import PushRequest, SearchRequest
-from models.ProjectModel import ProjectModel
-from models.ChunkModel import ChunkModel
-from controllers.NLPController import NLPController
-from models.enums.ResponseEnums import ResponseSignal
 import logging
 
-
+from controllers.NLPController import NLPController
+from fastapi import APIRouter, status, Request
+from fastapi.responses import JSONResponse
+from models.ChunkModel import ChunkModel
+from models.ProjectModel import ProjectModel
+from models.enums.ResponseEnums import ResponseSignal
+from routes.schemes.nlp import PushRequest, SearchRequest
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -21,8 +18,7 @@ nlp_router = APIRouter(
 
 @nlp_router.post("/index/push/{project_id}")
 async def index_project(request: Request, project_id: int, push_request: PushRequest):
-
-    project_model = await ProjectModel.create_instance(db_client= request.app.db_client)
+    project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
     project = await project_model.get_project_or_create_one(project_id=project_id)
 
     if project is None:
@@ -33,14 +29,15 @@ async def index_project(request: Request, project_id: int, push_request: PushReq
             }
         )
 
-    chunk_model = await ChunkModel.create_instance(db_client= request.app.db_client)
+    chunk_model = await ChunkModel.create_instance(db_client=request.app.db_client)
     has_records = True
     page_no = 1
     idx = 0
     chunks_ids = []
     chunks = []
     while has_records:
-        page_chunks, total_pages = await chunk_model.get_project_chunks(project_id=project.project_id, page_number=page_no)
+        page_chunks, total_pages = await chunk_model.get_project_chunks(project_id=project.project_id,
+                                                                        page_number=page_no)
         has_records = len(page_chunks) > 0
         if not has_records:
             break
@@ -82,7 +79,7 @@ async def index_project(request: Request, project_id: int, push_request: PushReq
 
 @nlp_router.get("/index/info/{project_id}")
 async def get_project_index_info(request: Request, project_id: int):
-    project_model = await ProjectModel.create_instance(db_client= request.app.db_client)
+    project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
     project = await project_model.get_project_or_create_one(project_id=project_id)
     if project is None:
         return JSONResponse(
@@ -111,7 +108,7 @@ async def get_project_index_info(request: Request, project_id: int):
 
 @nlp_router.post("/index/search/{project_id}")
 async def search_index(request: Request, project_id: int, search_request: SearchRequest):
-    project_model = await ProjectModel.create_instance(db_client= request.app.db_client)
+    project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
     project = await project_model.get_project_or_create_one(project_id=project_id)
     print(project)
     if project is None:
@@ -147,14 +144,14 @@ async def search_index(request: Request, project_id: int, search_request: Search
         status_code=status.HTTP_200_OK,
         content={
             "signal": ResponseSignal.VECTORDB_SEARCH_SUCCESS.value,
-            "results": [ result.dict() for result in results]
+            "results": [result.dict() for result in results]
         }
     )
 
 
 @nlp_router.post("/index/answer/{project_id}")
 async def answer_rag(request: Request, project_id: int, search_request: SearchRequest):
-    project_model = await ProjectModel.create_instance(db_client= request.app.db_client)
+    project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
     project = await project_model.get_project_or_create_one(project_id=project_id)
     if project is None:
         return JSONResponse(
@@ -194,5 +191,3 @@ async def answer_rag(request: Request, project_id: int, search_request: SearchRe
             "chat_history": chat_history
         }
     )
-
-

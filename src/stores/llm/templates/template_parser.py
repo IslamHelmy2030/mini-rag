@@ -10,7 +10,6 @@ class TemplateParser:
 
         self.set_language(language)
 
-
     def set_language(self, language: str):
         if not language:
             self.language = self.default_language
@@ -20,7 +19,6 @@ class TemplateParser:
             self.language = language
         else:
             self.language = self.default_language
-
 
     def get(self, group: str, key: str, vars: dict = {}):
         if not group or not key:

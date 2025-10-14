@@ -1,11 +1,14 @@
-from ..LLMInterface import LLMInterface
-from ..LLMEnums import CoHereEnums, DocumentTypeEnums
-import cohere
 import logging
+
+import cohere
+
+from ..LLMEnums import CoHereEnums, DocumentTypeEnums
+from ..LLMInterface import LLMInterface
+
 
 class CoHereProvider(LLMInterface):
 
-    def __init__(self, embedding_api_key: str= None, embedding_api_url: str = None,
+    def __init__(self, embedding_api_key: str = None, embedding_api_url: str = None,
                  generation_api_key: str = None, generation_api_url: str = None,
                  default_input_max_tokens: int = 1000,
                  default_generation_max_output_tokens: int = 1000,
@@ -60,7 +63,7 @@ class CoHereProvider(LLMInterface):
         response = self.generation_client.chat(
             model=self.generation_model_id,
             chat_history=chat_history,
-            message= self.process_text(prompt),
+            message=self.process_text(prompt),
             max_tokens=max_output_tokens,
             temperature=temperature
         )
@@ -71,7 +74,7 @@ class CoHereProvider(LLMInterface):
 
         return response.text
 
-    def embed_text(self, text:str, document_type:str = None):
+    def embed_text(self, text: str, document_type: str = None):
         if not self.embedding_client:
             self.logger.error("CoHere Embedding client is not initialized")
             return None
@@ -85,8 +88,8 @@ class CoHereProvider(LLMInterface):
             input_type = CoHereEnums.QUERY
 
         response = self.embedding_client.embed(
-            model= self.embedding_model_id,
-            texts= [self.process_text(text)],
+            model=self.embedding_model_id,
+            texts=[self.process_text(text)],
             input_type=input_type,
             embedding_types=['float']
         )
@@ -97,8 +100,7 @@ class CoHereProvider(LLMInterface):
 
         return response.embeddings.float[0]
 
-
-    def construct_prompt(self, prompt:str, role:str):
+    def construct_prompt(self, prompt: str, role: str):
         return {
             "role": role,
             "text": prompt

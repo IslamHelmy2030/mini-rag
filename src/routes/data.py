@@ -1,17 +1,19 @@
-from fastapi import FastAPI, APIRouter, Depends, UploadFile, status, Request
-from fastapi.responses import JSONResponse
-import os
-from helpers.config import get_settings, Settings
-from controllers import DataController, ProjectController, ProcessController
-import aiofiles
-from models import ResponseSignal
 import logging
-from .schemes.data import ProcessRequest
-from models.ProjectModel import ProjectModel
-from models.ChunkModel import ChunkModel
+import os
+
+import aiofiles
+from controllers import DataController, ProjectController, ProcessController
+from fastapi import APIRouter, Depends, UploadFile, status, Request
+from fastapi.responses import JSONResponse
+from helpers.config import get_settings, Settings
+from models import ResponseSignal
 from models.AssetModel import AssetModel
+from models.ChunkModel import ChunkModel
+from models.ProjectModel import ProjectModel
 from models.db_schemes import DataChunk, Asset
 from models.enums.AssetTypeEnum import AssetTypeEnum
+
+from .schemes.data import ProcessRequest
 
 logger = logging.getLogger('uvicorn.error')
 

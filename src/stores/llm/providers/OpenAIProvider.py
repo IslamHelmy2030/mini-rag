@@ -1,11 +1,14 @@
-from ..LLMInterface import LLMInterface
-from ..LLMEnums import OpenAIEnums
-from openai import OpenAI
 import logging
+
+from openai import OpenAI
+
+from ..LLMEnums import OpenAIEnums
+from ..LLMInterface import LLMInterface
+
 
 class OpenAIProvider(LLMInterface):
 
-    def __init__(self, embedding_api_key: str= None, embedding_api_url: str = None,
+    def __init__(self, embedding_api_key: str = None, embedding_api_url: str = None,
                  generation_api_key: str = None, generation_api_url: str = None,
                  default_input_max_tokens: int = 1000,
                  default_generation_max_output_tokens: int = 1000,
@@ -33,7 +36,8 @@ class OpenAIProvider(LLMInterface):
         if generation_api_key:
             self.generation_client = OpenAI(
                 api_key=self.generation_api_key,
-                base_url=self.generation_api_url if self.generation_api_url and len(self.generation_api_url) > 0 else None
+                base_url=self.generation_api_url if self.generation_api_url and len(
+                    self.generation_api_url) > 0 else None
             )
 
         self.enums = OpenAIEnums
@@ -78,7 +82,6 @@ class OpenAIProvider(LLMInterface):
 
         return response.choices[0].message.content
 
-
     def embed_text(self, text: str, document_type: str = None):
         if not self.embedding_client:
             self.logger.error("OpenAI Embedding client is not initialized")
@@ -96,7 +99,7 @@ class OpenAIProvider(LLMInterface):
 
         return response.data[0].embedding
 
-    def construct_prompt(self, prompt:str, role:str):
+    def construct_prompt(self, prompt: str, role: str):
         return {
             "role": role,
             "content": prompt

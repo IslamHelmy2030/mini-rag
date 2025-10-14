@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class VectorDBEnums(Enum):
     FAISS = "FAISS"
     HNSWLIB = "HNSWLIB"
@@ -9,4 +10,4 @@ class VectorDBEnums(Enum):
 class DistanceMethodEnums(Enum):
     COSINE = "cosine"
     EUCLIDEAN = "euclidean"
-    DOT="dot"
+    DOT = "dot"
