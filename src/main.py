@@ -20,13 +20,12 @@ async def startup_events():
     postgres_conn = f"postgresql+asyncpg://{settings.POSTGRES_USERNAME}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_MAIN_DATABASE}"
 
     app.db_engine = create_async_engine(postgres_conn)
-
     app.db_client = sessionmaker(
         app.db_engine, class_=AsyncSession, expire_on_commit=False
     )
 
     llm_provider_factory = LLMProviderFactory(settings)
-    vectordb_provider = VectorDBProviderFactory(settings)
+    vectordb_provider_factory = VectorDBProviderFactory(config=settings, db_client=app.db_client)
 
     # generation client
     app.generation_client = llm_provider_factory.create(provider=settings.GENERATION_BACKEND)
@@ -38,8 +37,8 @@ async def startup_events():
                                              embedding_size=settings.EMBEDDING_MODEL_SIZE)
 
     # vector DB client
-    app.vectordb_client = vectordb_provider.create(provider=settings.VECTOR_DB_BACKEND)
-    app.vectordb_client.connect()
+    app.vectordb_client = vectordb_provider_factory.create(provider=settings.VECTOR_DB_BACKEND)
+    await app.vectordb_client.connect()
 
     # Template Parser
     app.template_parser = TemplateParser(language=settings.PRIMARY_LANG, default_language=settings.DEFAULT_LANG)
@@ -48,7 +47,7 @@ async def startup_events():
 async def shutdown_events():
     # app.mongo_conn.close()
     app.db_engine.dispose()
-    app.vectordb_client.disconnect()
+    await app.vectordb_client.disconnect()
 
 
 app.add_event_handler("startup", startup_events)

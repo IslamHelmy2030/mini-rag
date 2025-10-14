@@ -1,9 +1,10 @@
-from bson.objectid import ObjectId
-from sqlalchemy import func, delete
-from sqlalchemy.future import select
-
 from .BaseDataModel import BaseDataModel
 from .db_schemes import DataChunk
+from .enums.DataBaseEnum import DataBaseEnum
+from bson.objectid import ObjectId
+from pymongo import InsertOne
+from sqlalchemy.future import select
+from sqlalchemy import func, delete
 
 
 class ChunkModel(BaseDataModel):
@@ -25,10 +26,9 @@ class ChunkModel(BaseDataModel):
             await session.refresh(chunk)
         return chunk
 
-    async def get_chunk(self, chunk_id: int):
+    async def get_chunk(self, chunk_id: str):
         async with self.db_client() as session:
-            query = select(DataChunk).where(DataChunk.chunk_id == chunk_id)
-            result = await session.execute(query)
+            result = await session.execute(select(DataChunk).where(DataChunk.chunk_id == chunk_id))
             chunk = result.scalar_one_or_none()
         return chunk
 
@@ -36,35 +36,25 @@ class ChunkModel(BaseDataModel):
         async with self.db_client() as session:
             async with session.begin():
                 for i in range(0, len(chunks), batch_size):
-                    batch_end = i + batch_size
-                    batch_chunks = chunks[i:batch_end]
-                    session.add_all(batch_chunks)
+                    batch = chunks[i:i + batch_size]
+                    session.add_all(batch)
             await session.commit()
         return len(chunks)
 
     async def delete_chunks_by_project_id(self, project_id: ObjectId):
         async with self.db_client() as session:
-            query = delete(DataChunk).where(DataChunk.chunk_project_id == project_id)
-            result = await session.execute(query)
+            stmt = delete(DataChunk).where(DataChunk.chunk_project_id == project_id)
+            result = await session.execute(stmt)
             await session.commit()
         return result.rowcount
 
-    async def get_project_chunks(self, project_id: ObjectId, page_number: int = 1, page_size: int = 100):
+    async def get_poject_chunks(self, project_id: ObjectId, page_no: int = 1, page_size: int = 50):
         async with self.db_client() as session:
-            total_project_chunks = await session.execute(
-                select(func.count(DataChunk.chunk_id)).where(DataChunk.chunk_project_id == project_id))
-            total_project_chunks_count = total_project_chunks.scalar_one()
-
-            total_pages = total_project_chunks_count // page_size
-            if total_project_chunks_count % page_size > 0:
-                total_pages += 1
-
-            query = select(DataChunk).where(DataChunk.chunk_project_id == project_id).offset(
-                (page_number - 1) * page_size).limit(page_size)
-            result = await session.execute(query)
-            chunks = result.scalars().all()
-
-        return chunks, total_pages
+            stmt = select(DataChunk).where(DataChunk.chunk_project_id == project_id).offset(
+                (page_no - 1) * page_size).limit(page_size)
+            result = await session.execute(stmt)
+            records = result.scalars().all()
+        return records
 
     async def get_total_chunks_count(self, project_id: ObjectId):
         total_count = 0
@@ -74,3 +64,5 @@ class ChunkModel(BaseDataModel):
             total_count = records_count.scalar()
 
         return total_count
+
+

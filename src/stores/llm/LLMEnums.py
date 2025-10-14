@@ -21,6 +21,6 @@ class CoHereEnums(Enum):
     QUERY = "search_query"
 
 
-class DocumentTypeEnums(Enum):
+class DocumentTypeEnum(Enum):
     DOCUMENT = "document"
     QUERY = "query"
