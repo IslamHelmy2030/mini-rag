@@ -29,6 +29,7 @@ class PGVectorProvider(VectorDBInterface):
         self.logger = logging.getLogger("uvicorn")
         self.default_index_name = lambda collection_name: f"{collection_name}_vector_idx"
 
+
     async def connect(self):
         async with self.db_client() as session:
             try:
@@ -47,8 +48,10 @@ class PGVectorProvider(VectorDBInterface):
                 self.logger.warning(f"Vector extension setup: {str(e)}")
                 await session.rollback()
 
+
     async def disconnect(self):
         pass
+
 
     async def is_collection_existed(self, collection_name: str) -> bool:
 
@@ -61,6 +64,7 @@ class PGVectorProvider(VectorDBInterface):
 
         return record
 
+
     async def list_all_collections(self) -> List:
         records = []
         async with self.db_client() as session:
@@ -70,6 +74,7 @@ class PGVectorProvider(VectorDBInterface):
                 records = results.scalars().all()
 
         return records
+
 
     async def get_collection_info(self, collection_name: str) -> dict:
         async with self.db_client() as session:
@@ -100,6 +105,7 @@ class PGVectorProvider(VectorDBInterface):
                     "record_count": record_count.scalar_one(),
                 }
 
+
     async def delete_collection(self, collection_name: str):
         async with self.db_client() as session:
             async with session.begin():
@@ -110,6 +116,7 @@ class PGVectorProvider(VectorDBInterface):
                 await session.commit()
 
         return True
+
 
     async def create_collection(self, collection_name: str,
                                 embedding_size: int,
@@ -140,6 +147,7 @@ class PGVectorProvider(VectorDBInterface):
 
         return False
 
+
     async def is_index_existed(self, collection_name: str) -> bool:
         index_name = self.default_index_name(collection_name)
         async with self.db_client() as session:
@@ -154,6 +162,7 @@ class PGVectorProvider(VectorDBInterface):
                                                 {"index_name": index_name, "collection_name": collection_name})
 
                 return bool(results.scalar_one_or_none())
+
 
     async def create_vector_index(self, collection_name: str,
                                   index_type: str = PgVectorIndexTypeEnums.HNSW.value):
@@ -182,6 +191,7 @@ class PGVectorProvider(VectorDBInterface):
 
                 self.logger.info(f"END: Created vector index for collection: {collection_name}")
 
+
     async def reset_vector_index(self, collection_name: str,
                                  index_type: str = PgVectorIndexTypeEnums.HNSW.value) -> bool:
 
@@ -192,6 +202,7 @@ class PGVectorProvider(VectorDBInterface):
                 await session.execute(drop_sql)
 
         return await self.create_vector_index(collection_name=collection_name, index_type=index_type)
+
 
     async def insert_one(self, collection_name: str, text: str, vector: list,
                          metadata: dict = None,
@@ -225,6 +236,7 @@ class PGVectorProvider(VectorDBInterface):
                 await self.create_vector_index(collection_name=collection_name)
 
         return True
+
 
     async def insert_many(self, collection_name: str, texts: list,
                           vectors: list, metadata: list = None,
@@ -274,6 +286,7 @@ class PGVectorProvider(VectorDBInterface):
         await self.create_vector_index(collection_name=collection_name)
 
         return True
+
 
     async def search_by_vector(self, collection_name: str, vector: list, limit: int):
 
