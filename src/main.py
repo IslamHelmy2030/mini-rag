@@ -14,8 +14,6 @@ app = FastAPI()
 
 async def startup_events():
     settings = get_settings()
-    # app.mongo_conn = AsyncIOMotorClient(settings.MONGODB_URL)
-    # app.db_client = app.mongo_conn[settings.MONGODB_DATABASE]
 
     postgres_conn = f"postgresql+asyncpg://{settings.POSTGRES_USERNAME}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_MAIN_DATABASE}"
 
@@ -45,9 +43,9 @@ async def startup_events():
 
 
 async def shutdown_events():
-    # app.mongo_conn.close()
-    app.db_engine.dispose()
+    await app.db_engine.dispose()
     await app.vectordb_client.disconnect()
+
 
 
 app.add_event_handler("startup", startup_events)

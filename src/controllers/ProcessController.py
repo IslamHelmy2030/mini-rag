@@ -3,7 +3,8 @@ import os
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_community.document_loaders import TextLoader
 from models import ProcessingEnum
-from typing import List
+from typing import List, Optional
+from langchain.docstore.document import Document
 from dataclasses import dataclass
 from .BaseController import BaseController
 from .ProjectController import ProjectController
@@ -52,6 +53,7 @@ class ProcessController(BaseController):
 
         return None
 
+
     def process_file_content(self, file_content: list, file_id: str,
                              chunk_size: int = 100, overlap_size: int = 20):
 
@@ -78,31 +80,105 @@ class ProcessController(BaseController):
 
         return chunks
 
-    def process_simpler_splitter(self, texts: List[str], metadatas: List[dict], chunk_size: int,
-                                 splitter_tag: str = "\n"):
 
-        full_text = " ".join(texts)
+    # def process_simpler_splitter(self, texts: List[str], metadatas: List[dict], chunk_size: int,
+    #                              splitter_tag: str = "\n"):
+    #
+    #     full_text = " ".join(texts)
+    #
+    #     # split by splitter_tag
+    #     lines = [doc.strip() for doc in full_text.split(splitter_tag) if len(doc.strip()) > 1]
+    #
+    #     chunks = []
+    #     current_chunk = ""
+    #
+    #     for line in lines:
+    #         current_chunk += line + splitter_tag
+    #         if len(current_chunk) >= chunk_size:
+    #             chunks.append(Document(
+    #                 page_content=current_chunk.strip(),
+    #                 metadata={}
+    #             ))
+    #
+    #             current_chunk = ""
+    #
+    #     if len(current_chunk) >= 0:
+    #         chunks.append(Document(
+    #             page_content=current_chunk.strip(),
+    #             metadata={}
+    #         ))
+    #
+    #     return chunks
 
-        # split by splitter_tag
-        lines = [doc.strip() for doc in full_text.split(splitter_tag) if len(doc.strip()) > 1]
+    def process_simpler_splitter(
+            self,
+            texts: List[str],
+            metadatas: Optional[List[dict]],
+            chunk_size: int,
+            splitter_tag: str = "\n",
+            keep_separator: bool = True,
+    ) -> List[Document]:
+        """
+        Split each input text on `splitter_tag`, pack pieces into chunks of at most `chunk_size` characters,
+        and preserve per-text metadata.
 
-        chunks = []
-        current_chunk = ""
+        Notes:
+          - `chunk_size` is in characters.
+          - Long pieces are further sliced to respect the limit.
+        """
 
-        for line in lines:
-            current_chunk += line + splitter_tag
-            if len(current_chunk) >= chunk_size:
-                chunks.append(Document(
-                    page_content=current_chunk.strip(),
-                    metadata={}
-                ))
+        if chunk_size <= 0:
+            raise ValueError("chunk_size must be > 0")
 
-                current_chunk = ""
+        if metadatas is not None and len(metadatas) != len(texts):
+            raise ValueError("texts and metadatas must have the same length")
 
-        if len(current_chunk) >= 0:
-            chunks.append(Document(
-                page_content=current_chunk.strip(),
-                metadata={}
-            ))
+        chunks: List[Document] = []
+
+        def flush_chunk(buf: List[str], meta: dict):
+            if not buf:
+                return
+            content = "".join(buf)
+            if content:  # prevent empty trailing chunk
+                chunks.append(Document(page_content=content, metadata=meta or {}))
+
+        for idx, text in enumerate(texts):
+            meta = (metadatas[idx] if metadatas is not None else {}) or {}
+
+            # Split this text only (preserves per-source metadata)
+            raw_pieces = text.split(splitter_tag) if splitter_tag else [text]
+            pieces = [p.strip() for p in raw_pieces if p.strip() != ""]  # keep single chars
+
+            buf: List[str] = []
+            buf_len = 0
+            sep = splitter_tag if (keep_separator and splitter_tag) else ""
+
+            for piece in pieces:
+                # Append separator to the piece when packing (except when splitting a long piece)
+                unit = piece + sep
+
+                # If the unit itself is longer than chunk_size, slice it
+                start = 0
+                while start < len(unit):
+                    remaining = chunk_size - buf_len
+                    # If buffer is empty and unit is huge, take a full slice
+                    take = min(remaining, len(unit) - start)
+
+                    if take == 0:
+                        # buffer full; flush and continue
+                        flush_chunk(buf, meta)
+                        buf, buf_len = [], 0
+                        continue
+
+                    buf.append(unit[start:start + take])
+                    buf_len += take
+                    start += take
+
+                    if buf_len >= chunk_size:
+                        flush_chunk(buf, meta)
+                        buf, buf_len = [], 0
+
+            # Flush any remainder for this text
+            flush_chunk(buf, meta)
 
         return chunks

@@ -14,15 +14,17 @@ class DataController(BaseController):
         super().__init__()
         self.size_scale = 1048576  # convert MB to bytes
 
+
     def validate_uploaded_file(self, file: UploadFile):
 
         if file.content_type not in self.app_settings.FILE_ALLOWED_TYPES:
             return False, ResponseSignal.FILE_TYPE_NOT_SUPPORTED.value
 
-        #if file.size > self.app_settings.FILE_MAX_SIZE * self.size_scale:
+        if file.size > self.app_settings.FILE_MAX_SIZE * self.size_scale:
             return False, ResponseSignal.FILE_SIZE_EXCEEDED.value
 
         return True, ResponseSignal.FILE_VALIDATED_SUCCESS.value
+
 
     def generate_unique_filepath(self, orig_file_name: str, project_id: str):
 
@@ -46,6 +48,7 @@ class DataController(BaseController):
             )
 
         return new_file_path, random_key + "_" + cleaned_file_name
+
 
     def get_clean_file_name(self, orig_file_name: str):
 
