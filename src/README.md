@@ -24,9 +24,14 @@ This README focuses on running and working with the application code in the src 
 
 3) Configure environment variables
    - Copy src/.env.example to the project root as .env
-   - Fill in values:
-     - GENERATION_API_KEY and EMBEDDING_API_KEY (unless you use a local OpenAI-compatible server such as Ollama)
-     - Optional: adjust GENERATION_API_URL/EMBEDDING_API_URL, model IDs, and VECTOR_DB_* settings
+   - About the example:
+     - It is pre-configured for a local OpenAI-compatible server (e.g., Ollama) at http://localhost:11434/v1/
+     - Default models: GENERATION_MODEL_ID=gemma3:4b, EMBEDDING_MODEL_ID=qwen3-embedding:8b, EMBEDDING_MODEL_SIZE=4096
+     - The example sets GENERATION_API_KEY and EMBEDDING_API_KEY to "sk-" as non-empty placeholders required by some clients
+   - What to change:
+     - If you use a local server like Ollama, you can keep the "sk-" placeholders
+     - If you use a hosted provider (e.g., OpenAI), set real API keys, set GENERATION_API_URL/EMBEDDING_API_URL to the provider's URL (e.g., https://api.openai.com/v1/), and set appropriate model IDs
+     - Optional: adjust VECTOR_DB_* settings
      - Optional: set POSTGRES_* if using Postgres/pgvector
    - See ../README.md for a complete example and option descriptions
 
