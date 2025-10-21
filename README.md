@@ -18,7 +18,7 @@ questions to get AI-generated answers based on your documents.
 ## Prerequisites
 
 - Python 3.9+ recommended
-- Docker (optional, recommended for MongoDB)
+- Docker (optional, recommended for PostgreSQL/pgvector)
 - Works on Windows, Ubuntu (Linux), and macOS
 - OpenAI API key (for text generation)
 - Cohere API key (for embeddings)
@@ -36,7 +36,7 @@ questions to get AI-generated answers based on your documents.
     - python -m pip install -r src/requirements.txt
     - On Ubuntu: python3 -m pip install -r src/requirements.txt
 3) Configure environment variables (see next section)
-4) Ensure MongoDB is running (see "Run MongoDB with Docker")
+4) Ensure PostgreSQL is running (see "Run PostgreSQL with Docker (pgvector)")
 5) Start the API (see "Run the API")
 
 ## Environment variables
@@ -53,69 +53,77 @@ Example .env:
 APP_NAME=mini-rag
 APP_VERSION=0.1.0
 
-# File settings
 FILE_ALLOWED_TYPES=["text/plain","application/pdf"]
 FILE_MAX_SIZE=10
-FILE_DEFAULT_CHUNK_SIZE=512000
+FILE_DEFAULT_CHUNK_SIZE=512000 #512KB
 
-# MongoDB settings
-MONGODB_URL="mongodb://admin:admin@localhost:27007"
-MONGODB_DATABASE="mini-rag"
+#=============== Database Config ==================
+POSTGRES_USERNAME="postgres"
+POSTGRES_PASSWORD="admin"
+POSTGRES_HOST="localhost"
+POSTGRES_PORT=5432
+POSTGRES_MAIN_DATABASE="minirag"
 
-# LLM Configuration
-GENERATION_BACKEND="OPENAI"
-EMBEDDING_BACKEND="COHERE"
-
-GENERATION_MODEL_ID="gpt-4o-2024-04-14"
-EMBEDDING_MODEL_ID="embed-multilingual-light-v3.0"
-EMBEDDING_MODEL_SIZE="384"
-
+#=============== LLM Config ==================
 INPUT_DEFAULT_MAX_SIZE=1024
+
+#=============== Embedding Config ================
+EMBEDDING_BACKEND="OPENAI"
+EMBEDDING_API_KEY="sk-"
+EMBEDDING_API_URL="http://localhost:11434/v1/"
+EMBEDDING_MODEL_ID="qwen3-embedding:8b"
+EMBEDDING_MODEL_SIZE="4096"
+
+#=============== Generation Config ================
+GENERATION_BACKEND="OPENAI"
+GENERATION_API_KEY="sk-"
+GENERATION_API_URL="http://localhost:11434/v1/"
+GENERATION_MODEL_ID="gemma3:4b"
 GENERATION_DEFAULT_MAX_TOKENS=200
 GENERATION_DEFAULT_TEMPERATURE=0.1
 
-# OpenAI Configuration
-OPENAI_API_KEY="your_openai_api_key_here"
-OPENAI_API_URL=""
-
-# Cohere Configuration
-COHERE_API_KEY="your_cohere_api_key_here"
-
-# Vector DB Configuration
+#=============== Vector DB Config ================
+VECTOR_DB_BACKEND_LITERAL=["QDRANT", "PGVECTOR"]
 VECTOR_DB_BACKEND="QDRANT"
 VECTOR_DB_PATH="qdrant_db"
 VECTOR_DB_DISTANCE_METHOD="cosine"
+VECTOR_DB_PGVEC_INDEX_THRESHOLD=1000000
 
-# Template Configuration
-PRIMARY_LANG="en"
+# ========================= Template Configs =========================
+PRIMARY_LANG="ar"
 DEFAULT_LANG="en"
 ```
 
 Notes:
 
-- **OPENAI_API_KEY** and **COHERE_API_KEY** are required for the RAG functionality
-- If your MongoDB requires authentication (see Docker section), use a URL with credentials and authSource
-- FILE_MAX_SIZE is in MB; default chunk size is in bytes
-- EMBEDDING_MODEL_SIZE must match your chosen embedding model's output dimension
-- Vector database files are stored locally in the path specified by VECTOR_DB_PATH
+- If you use a hosted provider (OpenAI/Cohere), set the corresponding API keys and, if needed, the API URLs.
+- If you use a local OpenAI-compatible server (e.g., Ollama or any OpenAI-compatible API), set the API_URL fields; API keys may be optional.
+- Configure PostgreSQL via POSTGRES_* variables. When using the provided Docker, the default user is "postgres" and the password is set in docker/.env.
+- FILE_MAX_SIZE is in MB; FILE_DEFAULT_CHUNK_SIZE is in bytes.
+- EMBEDDING_MODEL_SIZE must match your chosen embedding model's output dimension.
+- For Qdrant, vector data is stored under VECTOR_DB_PATH. For PGVECTOR, ensure the pgvector database is running and set VECTOR_DB_BACKEND="PGVECTOR".
 
-## Run MongoDB with Docker
+## Run PostgreSQL with Docker (pgvector)
 
-A docker-compose is provided for a local MongoDB on host port 27007.
+A docker-compose is provided for a local PostgreSQL with the pgvector extension on host port 5432. An optional MongoDB service is also included in the compose file but is not required by this project.
 
 Steps:
 
 1) Copy docker/.env.example to docker/.env and set values:
-    - MONGO_INITDB_ROOT_USERNAME=your_user
-    - MONGO_INITDB_ROOT_PASSWORD=your_password
-2) Start MongoDB (from project root):
+    - POSTGRES_PASSWORD=your_password
+    - (optional) MONGO_INITDB_ROOT_USERNAME=your_user
+    - (optional) MONGO_INITDB_ROOT_PASSWORD=your_password
+2) Start services (from project root):
     - docker compose -f docker/docker-compose.yml up -d
     - On older Docker versions: docker-compose -f docker/docker-compose.yml up -d
-3) Connection string examples:
-    - Without auth (if you left credentials empty): mongodb://localhost:27007
-    - With auth (if you set credentials): mongodb://your_user:your_password@localhost:27007/?authSource=admin
+3) .env connection settings for PostgreSQL:
+    - POSTGRES_HOST=localhost
+    - POSTGRES_PORT=5432
+    - POSTGRES_USERNAME=postgres
+    - POSTGRES_PASSWORD=the value you set in docker/.env
+    - POSTGRES_MAIN_DATABASE=minirag (create this database if it does not already exist)
 
-Data is persisted in docker/mongodb.
+Data is persisted in the named volume pgvector_data.
 
 ## Run the API
 
@@ -133,17 +141,19 @@ Option C — Run as a Python script
 - Windows: python src\main.py
 - Linux/macOS: python3 src/main.py
 
-Make sure your .env MONGODB_URL points to a reachable MongoDB before starting the API.
+Make sure your .env PostgreSQL settings (POSTGRES_*) are correct and the PostgreSQL (pgvector) service is running before starting the API.
 
 ## Base endpoint
 
 - GET http://127.0.0.1:8000/api/v1/
 
 Expected JSON response:
+```json
 {
-"app_name": "mini-rag",
-"app_version": "0.1.0"
+  "app_name": "mini-rag",
+  "app_version": "0.1.0"
 }
+```
 
 ## Complete usage workflow
 
@@ -183,10 +193,9 @@ curl -X POST -H "Content-Type: application/json" -d "{\"text\": \"key concepts\"
     - Form-data: file=@path/to/file.pdf (supports text/plain and application/pdf by default)
     - Response includes result_signal and file_id.
     - Example (PowerShell):
-        - curl -F "file=@src/assets/files/1/Notification\ Service\
-          Architecture.pdf" http://127.0.0.1:8000/api/v1/data/upload/1
+        - curl.exe -F "file=@\"src/assets/files/1/Notification Service Architecture.pdf\"" http://127.0.0.1:8000/api/v1/data/upload/1
 
-- Process a previously uploaded file into chunks and store in MongoDB
+- Process a previously uploaded file into chunks and store in PostgreSQL
     - POST http://127.0.0.1:8000/api/v1/data/process/{project_id}
     - JSON body example:
       {
@@ -197,8 +206,7 @@ curl -X POST -H "Content-Type: application/json" -d "{\"text\": \"key concepts\"
       }
     - Response includes result_signal and inserted_chunks.
 
-Uploaded files are saved under src/assets/files/{project_id}/. Chunks are written to the MongoDB database specified by
-MONGODB_DATABASE.
+Uploaded files are saved under src/assets/files/{project_id}/. Chunks are stored in the PostgreSQL database configured by the POSTGRES_* settings.
 
 ## NLP/RAG endpoints
 
@@ -267,10 +275,10 @@ MONGODB_DATABASE.
 - Uvicorn missing (Ubuntu):
     - source .venv/bin/activate && python3 -m pip install -r src/requirements.txt
     - python3 -m uvicorn main:app --app-dir src --reload --host 127.0.0.1 --port 8000
-- Cannot connect to MongoDB:
+- Cannot connect to PostgreSQL:
     - Ensure Docker is running and the container is up: docker ps
-    - Verify the port mapping 27007 -> 27017 and your MONGODB_URL
-    - If using auth, include username, password, and ?authSource=admin in MONGODB_URL
+    - Verify the port mapping 5432 -> 5432 and your POSTGRES_* settings (host, port, user, password, database)
+    - Confirm the database exists (e.g., minirag) and credentials match docker/.env
 - Verify uvicorn installation:
     - python -m pip show uvicorn
 - If venv or pip is missing (Ubuntu):
